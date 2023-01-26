@@ -7,9 +7,9 @@ aule.cache = aule.cache or {
 aule.db = aule.db or {}
 aule.dbHandle = aule.dbHandle or {}
 aule.showDebug = false
-aule.registeredAliases = aule.registeredAliases or{}
-aule.registeredEvents = aule.registeredEvents or{}
-aule.registeredEventHandlers = aule.registeredEventHandlers or{}
+aule.registeredAliases = aule.registeredAliases or {}
+aule.registeredEvents = aule.registeredEvents or {}
+aule.registeredEventHandlers = aule.registeredEventHandlers or {}
 
 function aule.load()
   -- Set up database stuff here
@@ -61,4 +61,3 @@ end
 aule.registerAlias("Core", "aule", "This menu. How'd you figure it out??")
 
 aule.registerEvent("Core", "aule.loaded", "The Aule system has fully loaded.")
-  
