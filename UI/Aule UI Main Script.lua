@@ -57,6 +57,14 @@ aule.ui.layout = {
     active = true,
     parent = "bottomLabel",
   },
+  ihContainer = {
+    active = true,
+    parent = "leftContainer",
+    y = "50%",
+    x = "0",
+    width = "100%",
+    height = "50%"
+  },
   left = {
     height = "100%",
     width = 200

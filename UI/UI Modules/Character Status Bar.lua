@@ -2,7 +2,7 @@ aule.ui.characterBar = aule.ui.characterBar or {}
 
 function aule.ui.characterBar.build()
   if not aule.ui.layout.statusBar.active then
-    aule.log("Health bars are inactive, not building")
+    aule.log("Status Bar not active")
     return
   end
 
