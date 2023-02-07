@@ -1,0 +1,15 @@
+{
+  "name": "achaea-aule-ts",
+  "version": "1.0.0",
+  "description": "A TypeScript-based system for Achaea, which allows us to export to Mudlet and Nexus",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tstl",
+    "dev": "tstl --watch"
+  },
+  "author": "",
+  "license": "GPL-3.0-only",
+  "devDependencies": {
+    "typescript-to-lua": "^1.12.1"
+  }
+}
