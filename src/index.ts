@@ -1,14 +1,12 @@
 const aule = {
   cache: {
     lastRoomId: 0,
-    playersHere: {}
+    playersHere: [],
   },
   db: {},
   dbHandle: {},
-  load: () => {
-
-  },
+  load: () => {},
   showDebug: false,
   registeredAliases: [],
   registeredEvents: [],
-}
+};
