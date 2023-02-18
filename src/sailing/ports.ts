@@ -139,5 +139,3 @@ const ports = {
       ]
     },
   }
-  
-export default ports
