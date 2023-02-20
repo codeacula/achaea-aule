@@ -1,5 +1,4 @@
-import ports from "./ports";
-const trades = {
+aule.trades = {
   circuitBreakerCounter: 0,
   circuitBreakerLimit: 0,
   findPort(name: string) {
@@ -19,5 +18,3 @@ const trades = {
     const startPort = this.findPort(where);
   },
 };
-
-export default trades;

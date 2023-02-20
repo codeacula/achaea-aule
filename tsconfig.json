@@ -8,6 +8,8 @@
     "outDir": "dist"
   },
   "tstl": {
-    "luaTarget": "JIT"
+    "buildMode": "default",
+    "luaTarget": "5.1",
+    "luaLibImport": "inline"
   }
 }
