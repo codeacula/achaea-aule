@@ -1,14 +1,14 @@
-aule.sailing = aule.sailing or {}
-aule.sailing.allFoundShips = {}
-aule.sailing.bals = {}
-aule.sailing.crewBalance = true
-aule.sailing.crewBalanceLost = nil
-aule.sailing.toAdd = {}
-aule.sailing.toUpdate = {}
-aule.sailing.isCheckingHarbour = false
-aule.sailing.currentRole = "No"
+AuleSailing = AuleSailing or {}
+AuleSailing.allFoundShips = {}
+AuleSailing.bals = {}
+AuleSailing.crewBalance = true
+AuleSailing.crewBalanceLost = nil
+AuleSailing.toAdd = {}
+AuleSailing.toUpdate = {}
+AuleSailing.isCheckingHarbour = false
+AuleSailing.currentRole = "No"
 
-aule.sailing.roles = {
+AuleSailing.roles = {
   No = "None",
   Ca = "Captain",
   Ba = "Ballista",
@@ -17,31 +17,31 @@ aule.sailing.roles = {
   He = "Helm",
 }
 
-aule.sailing.points = {
+AuleSailing.points = {
   galley = { [0] = 0, 0, 2, 4, 6, 8, 10, 11, 12 },
   strider = { [0] = 0, 0, 3, 4, 6, 8, 9, 10, 10 },
   cutter = { [0] = 0, 2, 4, 5, 7, 8, 8, 9, 9 },
 }
 
-aule.sailing.rowingEffectiveness = {
-  { cryptic = "I", name = "I", effectiveness = 2 },
-  { cryptic = "II", name = "II", effectiveness = 2 },
-  { cryptic = "III", name = "III", effectiveness = 2 },
-  { cryptic = "IV", name = "IV", effectiveness = 1 },
-  { cryptic = "V", name = "V", effectiveness = 1 },
-  { cryptic = "VI", name = "VI", effectiveness = 1 },
-  { cryptic = "VII", name = "VII", effectiveness = 1 },
+AuleSailing.rowingEffectiveness = {
+  { cryptic = "I",    name = "I",    effectiveness = 2 },
+  { cryptic = "II",   name = "II",   effectiveness = 2 },
+  { cryptic = "III",  name = "III",  effectiveness = 2 },
+  { cryptic = "IV",   name = "IV",   effectiveness = 1 },
+  { cryptic = "V",    name = "V",    effectiveness = 1 },
+  { cryptic = "VI",   name = "VI",   effectiveness = 1 },
+  { cryptic = "VII",  name = "VII",  effectiveness = 1 },
   { cryptic = "VIII", name = "VIII", effectiveness = 0 },
-  { cryptic = "IX", name = "IX", effectiveness = 0 },
+  { cryptic = "IX",   name = "IX",   effectiveness = 0 },
 }
 
-aule.sailing.ship = {
+AuleSailing.ship = {
   heading = nil
 }
 
-aule.sailing.startCapturingShips = false
+AuleSailing.startCapturingShips = false
 
-aule.sailing.dbStructure = {
+AuleSailing.dbStructure = {
   ships = {
     roomId = 0,
     longName = "",
@@ -51,10 +51,9 @@ aule.sailing.dbStructure = {
   }
 }
 
-aule.sailing.db = db:create("sailing", aule.sailing.dbStructure)
+AuleSailing.db = db:create("sailing", AuleSailing.dbStructure)
 
-function aule.sailing.addShip(shortName, longName, perms, roomId)
-
+function AuleSailing.addShip(shortName, longName, perms, roomId)
   perms = perms or ""
 
   local newShip = {
@@ -64,79 +63,83 @@ function aule.sailing.addShip(shortName, longName, perms, roomId)
     perms = #perms
   }
 
-  aule.sailing.toAdd[#aule.sailing.toAdd + 1] = newShip
+  AuleSailing.toAdd[#AuleSailing.toAdd + 1] = newShip
 end
 
-function aule.sailing.finishCheckingHarbour()
-  aule.sailing.isCheckingHarbour = false
-  aule.sailing.startCapturingShips = false
-  aule.sailing.startGaggingLines = false
+function AuleSailing.finishCheckingHarbour()
+  AuleSailing.isCheckingHarbour = false
+  AuleSailing.startCapturingShips = false
+  AuleSailing.startGaggingLines = false
 
-  if #aule.sailing.toAdd > 0 then
-    db:add(aule.sailing.db.ships, unpack(aule.sailing.toAdd))
-    aule.sailing.toAdd = {}
+  if #AuleSailing.toAdd > 0 then
+    db:add(AuleSailing.db.ships, unpack(AuleSailing.toAdd))
+    AuleSailing.toAdd = {}
   end
 
-  if #aule.sailing.toUpdate > 0 then
-    for _, ship in ipairs(aule.sailing.toUpdate) do
-      db:update(aule.sailing.db.ships, ship)
+  if #AuleSailing.toUpdate > 0 then
+    for _, ship in ipairs(AuleSailing.toUpdate) do
+      db:update(AuleSailing.db.ships, ship)
     end
-    aule.sailing.toUpdate = {}
+    AuleSailing.toUpdate = {}
   end
 
-  local knownShipsHere = aule.sailing.getShipsInRoom(mmp.currentroom)
+  local knownShipsHere = AuleSailing.getShipsInRoom(mmp.currentroom)
 
   for _, ship in ipairs(knownShipsHere) do
-    if not aule.sailing.allFoundShips[ship.shortName] then
+    if not AuleSailing.allFoundShips[ship.shortName] then
       ship.roomId = 0
-      db:update(aule.sailing.db.ships, ship)
+      db:update(AuleSailing.db.ships, ship)
     end
   end
 
-  aule.sailing.allFoundShips = {}
+  AuleSailing.allFoundShips = {}
 
-  aule.sailing.printHarbourReport()
+  AuleSailing.printHarbourReport()
 end
 
-function aule.sailing.getPermissionName(num)
-  if num == 1 then return "Passenger"
-  elseif num == 2 then return "Crew"
-  elseif num == 3 then return "Captain" end
+function AuleSailing.getPermissionName(num)
+  if num == 1 then
+    return "Passenger"
+  elseif num == 2 then
+    return "Crew"
+  elseif num == 3 then
+    return "Captain"
+  end
 
   return "None"
 end
 
-function aule.sailing.getShip(shortName)
-  local results = db:fetch(aule.sailing.db.ships, db:eq(aule.sailing.db.ships.shortName, shortName))
+function AuleSailing.getShip(shortName)
+  local results = db:fetch(AuleSailing.db.ships, db:eq(AuleSailing.db.ships.shortName, shortName))
 
   if #results == 0 then return nil end
 
   if #results > 1 then
-    aule.sailing.say("Got back multiple ships, returning the first one.")
+    AuleSailing.say("Got back multiple ships, returning the first one.")
   end
 
   return results[1]
 end
 
-function aule.sailing.getShipsInRoom(roomId)
-  return db:fetch(aule.sailing.db.ships, db:eq(aule.sailing.db.ships.roomId, roomId))
+function AuleSailing.getShipsInRoom(roomId)
+  return db:fetch(AuleSailing.db.ships, db:eq(AuleSailing.db.ships.roomId, roomId))
 end
 
-function aule.sailing.giveBalance()
-  aule.sailing.crewBalance = true
-  raiseEvent("aule.sailing.gotCrewbalance")
+function AuleSailing.giveBalance()
+  AuleSailing.crewBalance = true
+  raiseEvent("AuleSailing.gotCrewbalance")
 end
 
-function aule.sailing.isCaptain()
-  return aule.sailing.currentRole == "Ca"
+function AuleSailing.isCaptain()
+  return AuleSailing.currentRole == "Ca"
 end
 
-function aule.sailing.printHarbourReport(targetRoomId)
+function AuleSailing.printHarbourReport(targetRoomId)
   local roomId = tonumber(targetRoomId) or mmp.currentroom
   local foundShipsWithPerms = {}
   local shipsWithoutPerms = 0
 
-  for _, ship in ipairs(aule.sailing.getShipsInRoom(roomId)) do
+  for _, ship in ipairs(AuleSailing.getShipsInRoom(roomId)) do
     if ship.perms > 0 then
       table.insert(foundShipsWithPerms, ship)
     else
@@ -153,21 +156,22 @@ function aule.sailing.printHarbourReport(targetRoomId)
   end)
 
   if #foundShipsWithPerms == 0 then
-    aule.sailing.say(("There are no ships here that you have access to, and %s ships you don't."):format(shipsWithoutPerms))
+    AuleSailing.say(("There are no ships here that you have access to, and %s ships you don't."):format(
+    shipsWithoutPerms))
     return
   end
 
   local reportLine = "| <HotPink>%-15s<reset> | <DodgerBlue>%-11s<reset> | <gold>%-38s<reset> |\n"
   local sep = "+-----------------+-------------+----------------------------------------+\n"
 
-  aule.sailing.say("Ship report:\n")
+  AuleSailing.say("Ship report:\n")
 
   cecho(sep)
   cecho(reportLine:format("ID", "Perms", "Name"))
   cecho(sep)
 
   for _, ship in ipairs(foundShipsWithPerms) do
-    cechoLink(reportLine:format(ship.shortName, aule.sailing.getPermissionName(ship.perms), ship.longName),
+    cechoLink(reportLine:format(ship.shortName, AuleSailing.getPermissionName(ship.perms), ship.longName),
       function() send("board ship " .. ship.shortName) end, "Board " .. ship.shortName, true)
   end
   cecho(sep)
@@ -175,24 +179,24 @@ function aule.sailing.printHarbourReport(targetRoomId)
   cecho(("Plus <green>%s<reset> ships you don't have access to."):format(shipsWithoutPerms))
 end
 
-function aule.sailing.say(what)
+function AuleSailing.say(what)
   cecho(("\n<white>[<MediumBlue>Sailing<white>]<reset> %s"):format(what))
 end
 
-function aule.sailing.sendIfIsCaptain(command)
-  if not aule.sailing.isCaptain() then return false end
+function AuleSailing.sendIfIsCaptain(command)
+  if not AuleSailing.isCaptain() then return false end
 
   send(command)
   return true
 end
 
-function aule.sailing.setShip(longName, shortName, perms)
-  local ship = aule.sailing.getShip(shortName)
+function AuleSailing.setShip(longName, shortName, perms)
+  local ship = AuleSailing.getShip(shortName)
 
-  aule.sailing.allFoundShips[shortName] = true
+  AuleSailing.allFoundShips[shortName] = true
 
   if not ship then
-    aule.sailing.addShip(shortName, longName, perms, mmp.currentroom)
+    AuleSailing.addShip(shortName, longName, perms, mmp.currentroom)
     return
   end
 
@@ -210,16 +214,16 @@ function aule.sailing.setShip(longName, shortName, perms)
   ship.roomId = tonumber(mmp.currentroom)
   ship.perms = #perms
 
-  aule.sailing.toUpdate[#aule.sailing.toUpdate + 1] = ship
+  AuleSailing.toUpdate[#AuleSailing.toUpdate + 1] = ship
 end
 
-function aule.sailing.takeBalance()
-  aule.sailing.crewBalance = false
-  raiseEvent("aule.sailing.lostCrewbalance")
+function AuleSailing.takeBalance()
+  AuleSailing.crewBalance = false
+  raiseEvent("AuleSailing.lostCrewbalance")
 end
 
-function aule.sailing.turnShip(dir)
-  if not aule.sailing.isCaptain() then return false end
+function AuleSailing.turnShip(dir)
+  if not AuleSailing.isCaptain() then return false end
 
   send("ship turn " .. dir)
   return true

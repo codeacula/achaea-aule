@@ -3,5 +3,6 @@
     "undefined-global",
     "lowercase-global",
     "deprecated"
-  ]
+  ],
+  "editor.formatOnSave": true
 }
