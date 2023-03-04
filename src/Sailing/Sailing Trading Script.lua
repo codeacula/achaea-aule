@@ -1,8 +1,12 @@
 AuleSailing.trading = AuleSailing.trading or {}
-AuleSailing.trading.alreadyVisited = {}
 AuleSailing.trading.circuitBreakerCount = 0
 AuleSailing.trading.circuitBreakerLimit = 100000
 
+function AuleSailing.trading.findTradeRoutes(what, amount)
+
+end
+
+--[[
 function AuleSailing.trading.checkIfWeAlreadyBought(what, dest)
   local limiter = 20
   local currentDest = dest
@@ -128,3 +132,5 @@ function AuleSailing.trading.processDestination(dest)
 
   return dest
 end
+]]
+   --
