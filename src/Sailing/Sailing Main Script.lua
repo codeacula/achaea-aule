@@ -1,6 +1,5 @@
 AuleSailing = AuleSailing or {}
 AuleSailing.allFoundShips = {}
-AuleSailing.bals = {}
 AuleSailing.crewBalance = true
 AuleSailing.crewBalanceLost = nil
 AuleSailing.toAdd = {}
@@ -157,7 +156,7 @@ function AuleSailing.printHarbourReport(targetRoomId)
 
   if #foundShipsWithPerms == 0 then
     AuleSailing.say(("There are no ships here that you have access to, and %s ships you don't."):format(
-    shipsWithoutPerms))
+      shipsWithoutPerms))
     return
   end
 
