@@ -179,6 +179,13 @@ function aule.sailing.say(what)
   cecho(("\n<white>[<MediumBlue>Sailing<white>]<reset> %s"):format(what))
 end
 
+function aule.sailing.sendIfIsCaptain(command)
+  if not aule.sailing.isCaptain() then return false end
+
+  send(command)
+  return true
+end
+
 function aule.sailing.setShip(longName, shortName, perms)
   local ship = aule.sailing.getShip(shortName)
 
