@@ -1,136 +1,52 @@
 AuleSailing.trading = AuleSailing.trading or {}
 AuleSailing.trading.circuitBreakerCount = 0
 AuleSailing.trading.circuitBreakerLimit = 100000
+AuleSailing.trading.startingPoints = {}
 
-function AuleSailing.trading.findTradeRoutes(what, amount)
 
+-- This is the primary method to call when wanting to find available trade routes
+function AuleSailing.trading.findTradeRoutes(where, what, amount)
+  AuleSailing.trading.startingPoints = {}
+  local finalDest = AuleSailing.trading.createStop(where, what, amount)
+
+  AuleSailing.trading.processNextStops(finalDest)
+  display(AuleSailing.trading.startingPoints)
 end
 
---[[
-function AuleSailing.trading.checkIfWeAlreadyBought(what, dest)
-  local limiter = 20
-  local currentDest = dest
-
-  while currentDest ~= nil and limiter > 0 do
-    if not AuleSailing.trading.circuitBreaker() then return end
-    if dest.buyWhat == what then return true end
-    limiter = limiter - 1
-    currentDest = dest.parent
-  end
-
-  return false
-end
-
-function AuleSailing.trading.circuitBreaker()
-  AuleSailing.trading.circuitBreakerCount = AuleSailing.trading.circuitBreakerCount + 1
-
-  if AuleSailing.trading.circuitBreakerCount >= AuleSailing.trading.circuitBreakerLimit then
-    aule.warn("Hit the circuit breaker.")
-    print(debug.traceback())
-    return false
-  end
-
-  return true
-end
-
-function AuleSailing.trading.createDestination(name, buyWhat, buyCount, sellWhat, sellCount, fees, parent)
+function AuleSailing.trading.createStop(where, what, amount, nextDestination)
   return {
-    name = name,
-    dockingFee = fees,
-    buyWhat = buyWhat,
-    buyCount = buyCount,
-    sellWhat = sellWhat,
-    sellCount = sellCount,
-    parent = parent,
-    paths = {}
+    where = where,
+    what = what,
+    amount = amount,
+    next = nextDestination
   }
 end
 
-function AuleSailing.trading.findHarbour(name)
-  for _, harbourInfo in pairs(AuleSailing.ports) do
-    if name == harbourInfo.name then
-      return harbourInfo
+function AuleSailing.trading.notAlreadyBuying(dest, what)
+  local currentDest = dest
+
+  while currentDest ~= nil do
+    if currentDest.what == what then
+      return false
     end
+    currentDest = dest.next
   end
-
-  return nil
+  return true
 end
 
-function AuleSailing.trading.findRoutes(where, what, count)
-  AuleSailing.trading.alreadyVisited = {}
-  local finalDestination = AuleSailing.trading.findHarbour(where)
+function AuleSailing.trading.processNextStops(dest)
+  local nextDestinations = {}
 
-  if not finalDestination then
-    aule.warn("Unable to find harbour " .. where .. " in our list")
-    return
-  end
-
-  local dest = AuleSailing.trading.createDestination(where, nil, nil, what, count, finalDestination.fee)
-  local finalDest = AuleSailing.trading.processDestination(dest)
-
-  display(finalDest)
-  echo("Done!")
-  AuleSailing.trading.circuitBreakerCount = 0
-end
-
-function AuleSailing.trading.getListOfCurrentTrades(dest)
-  local currentTrades = {}
-
-  local tempDest = dest
-
-  while tempDest do
-    if not AuleSailing.trading.circuitBreaker() then return end
-
-    currentTrades[tempDest.sellWhat] = true
-    tempDest = tempDest.parent
-  end
-
-  return currentTrades
-end
-
-function AuleSailing.trading.getPortTrades(port, what)
-  local trades = {}
-  local alreadyTrading = AuleSailing.trading.getListOfCurrentTrades(dest)
-
-  if not alreadyTrading then
-    aule.warn("Couldn't get a list of already traded items")
-    return {}
-  end
-
-  for _, trade in ipairs(port.trades) do
-    if not AuleSailing.trading.circuitBreaker() then return end
-    if not alreadyTrading[trade.get.what] and trade.get.what == what then
-      trades[#trades + 1] = trade
-    end
-  end
-
-  return trades
-end
-
-function AuleSailing.trading.processDestination(dest)
-  -- Go through every port that sells what the harbour
-  for name, port in pairs(AuleSailing.ports) do
-    if not AuleSailing.trading.circuitBreaker() then return end
-    -- We don't need to revisit ports - this also is an easier way to prevent infinite recursion
-    if not AuleSailing.trading.checkIfWeAlreadyBought(dest) then
-      local foundTrades = AuleSailing.trading.getPortTrades(port, dest.sellWhat)
-
-      for _, trade in ipairs(foundTrades) do
-        if not AuleSailing.trading.circuitBreaker() then return end
-        if not AuleSailing.trading.checkIfWeAlreadyBought(trade.get.what, dest) then
-          dest.paths[#dest.paths + 1] = AuleSailing.trading.createDestination(name, trade.get.what, trade.get.amount,
-            trade.pay.what, trade.pay.amount, port.fee, dest)
-        end
+  for _, portInfo in ipairs(AuleSailing.ports) do
+    for _, trade in pairs(portInfo.trades) do
+      if AuleSailing.trading.notAlreadyBuying(dest, trade.pay) and trade.get == dest.what then
+        nextDestinations[#nextDestinations + 1] = AuleSailing.trading.createStop(portInfo.name, trade.pay.what,
+          trade.pay.amount * dest.amount)
       end
     end
   end
 
-  for _, nextDest in ipairs(dest.paths) do
-    if not AuleSailing.trading.circuitBreaker() then return end
-    AuleSailing.trading.processDestination(nextDest)
+  if #nextDestinations == 0 then
+    AuleSailing.trading.startingPoints[#AuleSailing.trading.startingPoints + 1] = dest
   end
-
-  return dest
 end
-]]
-   --
