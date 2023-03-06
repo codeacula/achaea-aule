@@ -39,7 +39,7 @@ function AuleSailing.trading.processNextStops(dest)
 
   for _, portInfo in ipairs(AuleSailing.ports) do
     for _, trade in pairs(portInfo.trades) do
-      if AuleSailing.trading.notAlreadyBuying(dest, trade.pay) and trade.get == dest.what then
+      if AuleSailing.trading.notAlreadyBuying(dest, trade.get) and trade.get == dest.what then
         nextDestinations[#nextDestinations + 1] = AuleSailing.trading.createStop(portInfo.name, trade.pay.what,
           trade.pay.amount * dest.amount)
       end
