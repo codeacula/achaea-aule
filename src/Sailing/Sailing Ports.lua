@@ -1,4 +1,13 @@
+AuleSailing = AuleSailing or {}
 AuleSailing.ports = {
+  {
+    name = "Ageiro",
+    fee = 0,
+    trades = {
+      { get = { amount = 1, what = "gems" }, pay = { amount = 2, what = "tabac" } },
+      { get = { amount = 3, what = "silk" }, pay = { amount = 2, what = "tabac" } },
+    }
+  },
   {
     name = "Colchis",
     fee = 0,

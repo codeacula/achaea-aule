@@ -1,12 +1,12 @@
+AuleSailing = AuleSailing or {}
 AuleSailing.trading = AuleSailing.trading or {}
-AuleSailing.trading.circuitBreakerCount = 0
-AuleSailing.trading.circuitBreakerLimit = 100000
 AuleSailing.trading.startingPoints = {}
 
 
 -- This is the primary method to call when wanting to find available trade routes
 function AuleSailing.trading.findTradeRoutes(where, what, amount)
   AuleSailing.trading.startingPoints = {}
+  AuleSailing.trading.circuitBreakerCount = 0
   local finalDest = AuleSailing.trading.createStop(where, what, amount)
 
   AuleSailing.trading.processNextStops(finalDest)
@@ -22,48 +22,47 @@ function AuleSailing.trading.createStop(where, what, amount, nextDestination)
   }
 end
 
-function AuleSailing.trading.isAlreadyBuying(dest, what)
-  local currentDest = dest
+function AuleSailing.trading.isAValidStop(fromDest, currentTrade)
+  if fromDest.what ~= currentTrade.get.what then
+    return false
+  end
+
+  local currentDest = fromDest
+  local breaker = 0
 
   while currentDest ~= nil do
-    if currentDest.what == what then
-      debugc("We're already buying " .. what)
-      return true
+    if currentDest.what == currentTrade.get.what then
+      return false
     end
-    currentDest = dest.next
+
+    currentDest = fromDest.next
+    debugc("Next dest is " .. currentDest.what)
+
+    breaker = breaker + 1
+    debugc("Step " .. breaker)
+    if breaker > 10 then return false end
   end
-  return false
+
+  return true
 end
 
 function AuleSailing.trading.processNextStops(dest)
-  local nextDestinations = {}
+  -- Get all destinations that sell what we're looking for
+  local newStops = {}
 
-  function checkIfViableNextStep(currentDest, currentTrade)
-    if currentDest.what ~= currentTrade.get.what then
-      return false
-    end
-
-    if AuleSailing.trading.isAlreadyBuying(currentDest, currentTrade.pay.what) then
-      return false
-    end
-
-    return true
-  end
-
-  for _, portInfo in ipairs(AuleSailing.ports) do
-    for _, trade in ipairs(portInfo.trades) do
-      if checkIfViableNextStep(dest, trade) then
-        local rAmount = math.ceil(trade.get.amount / dest.amount)
-        nextDestinations[#nextDestinations + 1] = AuleSailing.trading.createStop(portInfo.name, trade.pay.what,
-          trade.pay.amount * rAmount)
+  for _, currentDest in ipairs(AuleSailing.ports) do
+    for _, trade in ipairs(currentDest.trades) do
+      if AuleSailing.trading.isAValidStop(dest, trade) then
+        local nextStop = AuleSailing.trading.createStop(currentDest.name, trade.pay.what, trade.pay.amount, dest)
+        newStops[#newStops + 1] = nextStop
       end
     end
   end
 
-  if #nextDestinations == 0 then
+  if #newStops == 0 then
     AuleSailing.trading.startingPoints[#AuleSailing.trading.startingPoints + 1] = dest
   else
-    for _, nextDest in ipairs(nextDestinations) do
+    for _, nextDest in ipairs(newStops) do
       AuleSailing.trading.processNextStops(nextDest)
     end
   end

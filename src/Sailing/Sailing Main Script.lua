@@ -1,11 +1,14 @@
 AuleSailing = AuleSailing or {}
 AuleSailing.allFoundShips = {}
+AuleSailing.commandQueue = {}
+AuleSailing.commandTimer = nil
+AuleSailing.currentRole = "No"
 AuleSailing.crewBalance = true
 AuleSailing.crewBalanceLost = nil
+AuleSailing.currentCommand = nil
 AuleSailing.toAdd = {}
 AuleSailing.toUpdate = {}
 AuleSailing.isCheckingHarbour = false
-AuleSailing.currentRole = "No"
 
 AuleSailing.roles = {
   No = "None",
@@ -187,6 +190,17 @@ function AuleSailing.sendIfIsCaptain(command)
 
   send(command)
   return true
+end
+
+function AuleSailing.sendQueuedCommand()
+  if #AuleSailing.commandQueue == 0 then return end
+
+  AuleSailing.currentCommand = table.remove(AuleSailing.commandQueue, 1)
+
+  send(AuleSailing.currentCommand)
+  AuleSailing.commandTimer = tempTimer(3, function()
+
+  end)
 end
 
 function AuleSailing.setShip(longName, shortName, perms)
