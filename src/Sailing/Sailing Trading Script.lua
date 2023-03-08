@@ -1,5 +1,7 @@
 AuleSailing = AuleSailing or {}
 AuleSailing.trading = AuleSailing.trading or {}
+AuleSailing.trading.circuitBreakerCount = 0
+AuleSailing.trading.circuitBreakerLimit = 10000
 AuleSailing.trading.startingPoints = {}
 
 
@@ -10,37 +12,49 @@ function AuleSailing.trading.findTradeRoutes(where, what, amount)
   local finalDest = AuleSailing.trading.createStop(where, what, amount)
 
   AuleSailing.trading.processNextStops(finalDest)
-  display(AuleSailing.trading.startingPoints)
+  display(yajl.to_string(AuleSailing.trading.startingPoints))
 end
 
-function AuleSailing.trading.createStop(where, what, amount, nextDestination)
+function AuleSailing.trading.checkBreaker(msg)
+  AuleSailing.trading.circuitBreakerCount = AuleSailing.trading.circuitBreakerCount + 1
+
+  if msg then
+    debugc(msg)
+  end
+
+  if AuleSailing.trading.circuitBreakerCount > AuleSailing.trading.circuitBreakerLimit then
+    error("Hit the breaker limit!", 0)
+  end
+end
+
+function AuleSailing.trading.createStop(where, payWhat, payAmount, getWhat, getAmount, nextDestination)
   return {
     where = where,
-    what = what,
-    amount = amount,
+    payWhat = payWhat,
+    payAmount = payAmount,
+    getWhat = getWhat,
+    getAmount = getAmount,
     next = nextDestination
   }
 end
 
 function AuleSailing.trading.isAValidStop(fromDest, currentTrade)
-  if fromDest.what ~= currentTrade.get.what then
+  if fromDest.payWhat ~= currentTrade.get.what then
     return false
   end
 
   local currentDest = fromDest
-  local breaker = 0
 
   while currentDest ~= nil do
-    if currentDest.what == currentTrade.get.what then
+    if currentDest.payWhat == currentTrade.pay.what then
       return false
     end
 
-    currentDest = fromDest.next
-    debugc("Next dest is " .. currentDest.what)
+    currentDest = currentDest.next
 
-    breaker = breaker + 1
-    debugc("Step " .. breaker)
-    if breaker > 10 then return false end
+    if currentDest then
+      AuleSailing.trading.checkBreaker("Looking at next location" .. currentDest.where)
+    end
   end
 
   return true
@@ -51,10 +65,15 @@ function AuleSailing.trading.processNextStops(dest)
   local newStops = {}
 
   for _, currentDest in ipairs(AuleSailing.ports) do
+    AuleSailing.trading.checkBreaker("Checking port " .. currentDest.name)
     for _, trade in ipairs(currentDest.trades) do
+      AuleSailing.trading.checkBreaker(("Checking trade get: %s pay: %s"):format(trade.get.what, trade.pay.what))
       if AuleSailing.trading.isAValidStop(dest, trade) then
-        local nextStop = AuleSailing.trading.createStop(currentDest.name, trade.pay.what, trade.pay.amount, dest)
+        local nextStop = AuleSailing.trading.createStop(currentDest.name, trade.pay.what, trade.pay.amount,
+          trade.get.what, trade.get.amount, dest)
         newStops[#newStops + 1] = nextStop
+
+        debugc("Adding " .. nextStop.where .. "as next stop")
       end
     end
   end
