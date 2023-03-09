@@ -38,26 +38,22 @@ function AuleSailing.trading.createStop(where, payWhat, payAmount, getWhat, getA
     getWhat = getWhat,
     getAmount = getAmount,
     next = nextDestination,
-    totalToGet = 0
+    totalToGet = payAmount
   }
 end
 
 function AuleSailing.trading.getRouteSummary(start)
   -- First, go to the end, because we'll need to do maths from there
   local currentDest = start
+  local allDestinations = { currentDest }
 
   while currentDest.next do
+    allDestinations[#allDestinations + 1] = currentDest.next
     currentDest = currentDest.next
+    currentDest.next = nil
   end
 
-  local currentAmountNeeded = 0
-  while currentDest do
-    if currentDest.next then
-
-    end
-  end
-
-  display(currentDest)
+  display(allDestinations)
 end
 
 function AuleSailing.trading.isAValidStop(fromDest, currentTrade)
