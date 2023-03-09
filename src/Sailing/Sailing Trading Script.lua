@@ -12,7 +12,10 @@ function AuleSailing.trading.findTradeRoutes(where, what, amount)
   local finalDest = AuleSailing.trading.createStop(where, what, amount)
 
   AuleSailing.trading.processNextStops(finalDest)
-  display(yajl.to_string(AuleSailing.trading.startingPoints))
+
+  for _, start in ipairs(AuleSailing.trading.startingPoints) do
+    AuleSailing.trading.getRouteSummary(start)
+  end
 end
 
 function AuleSailing.trading.checkBreaker(msg)
@@ -34,8 +37,27 @@ function AuleSailing.trading.createStop(where, payWhat, payAmount, getWhat, getA
     payAmount = payAmount,
     getWhat = getWhat,
     getAmount = getAmount,
-    next = nextDestination
+    next = nextDestination,
+    totalToGet = 0
   }
+end
+
+function AuleSailing.trading.getRouteSummary(start)
+  -- First, go to the end, because we'll need to do maths from there
+  local currentDest = start
+
+  while currentDest.next do
+    currentDest = currentDest.next
+  end
+
+  local currentAmountNeeded = 0
+  while currentDest do
+    if currentDest.next then
+
+    end
+  end
+
+  display(currentDest)
 end
 
 function AuleSailing.trading.isAValidStop(fromDest, currentTrade)
