@@ -13,6 +13,8 @@ function AuleSailing.trading.findTradeRoutes(where, what, amount)
 
   AuleSailing.trading.processNextStops(finalDest)
 
+  display(AuleSailing.trading.startingPoints)
+
   for _, start in ipairs(AuleSailing.trading.startingPoints) do
     AuleSailing.trading.getRouteSummary(start)
   end
@@ -36,24 +38,49 @@ function AuleSailing.trading.createStop(where, payWhat, payAmount, getWhat, getA
     payWhat = payWhat,
     payAmount = payAmount,
     getWhat = getWhat,
-    getAmount = getAmount,
+    getAmount = getAmount or payAmount,
     next = nextDestination,
     totalToGet = payAmount
   }
 end
 
 function AuleSailing.trading.getRouteSummary(start)
-  -- First, go to the end, because we'll need to do maths from there
-  local currentDest = start
-  local allDestinations = { currentDest }
-
-  while currentDest.next do
-    allDestinations[#allDestinations + 1] = currentDest.next
-    currentDest = currentDest.next
-    currentDest.next = nil
+  function copyStop(stop)
+    return {
+      where = stop.where,
+      payWhat = stop.payWhat,
+      payAmount = stop.payAmount,
+      getWhat = stop.getWhat,
+      getAmount = stop.getAmount,
+      totalToGet = stop.payAmount
+    }
   end
 
-  display(allDestinations)
+  -- First, go to the end, because we'll need to do maths from there
+  local currentDest = start
+  local allDestinations = { copyStop(start) }
+
+  while currentDest.next do
+    allDestinations[#allDestinations + 1] = copyStop(currentDest.next)
+    currentDest = currentDest.next
+  end
+
+  for i = #allDestinations - 1, 1, -1 do
+    local prevStop = allDestinations[i + 1]
+    local currStop = allDestinations[i]
+
+    local howManyPrevPurchases = math.ceil(prevStop.totalToGet / prevStop.getAmount)
+    local totalCommsNeeded = prevStop.payAmount * howManyPrevPurchases
+    local howManyCurrPurchases = math.ceil(totalCommsNeeded / currStop.getAmount)
+    currStop.totalToGet = howManyCurrPurchases * currStop.getAmount
+  end
+
+  local routeSummary = {
+    destinations = allDestinations,
+    totalSteps = #allDestinations
+  }
+
+  return routeSummary
 end
 
 function AuleSailing.trading.isAValidStop(fromDest, currentTrade)
