@@ -2,22 +2,56 @@ AuleSailing = AuleSailing or {}
 AuleSailing.trading = AuleSailing.trading or {}
 AuleSailing.trading.circuitBreakerCount = 0
 AuleSailing.trading.circuitBreakerLimit = 10000
+AuleSailing.trading.currentTradeOptions = {}
+AuleSailing.trading.selectableTrades = {}
+AuleSailing.trading.selectedTrade = nil
 AuleSailing.trading.startingPoints = {}
 
 
 -- This is the primary method to call when wanting to find available trade routes
 function AuleSailing.trading.findTradeRoutes(where, what, amount)
+  AuleSailing.trading.currentTradeOptions = {}
   AuleSailing.trading.startingPoints = {}
+  AuleSailing.trading.selectableTrades = {}
   AuleSailing.trading.circuitBreakerCount = 0
   local finalDest = AuleSailing.trading.createStop(where, what, amount)
 
   AuleSailing.trading.processNextStops(finalDest)
 
-  display(AuleSailing.trading.startingPoints)
-
   for _, start in ipairs(AuleSailing.trading.startingPoints) do
-    AuleSailing.trading.getRouteSummary(start)
+    AuleSailing.trading.currentTradeOptions[#AuleSailing.trading.currentTradeOptions + 1] = AuleSailing.trading
+        .getRouteSummary(start)
   end
+
+  if #AuleSailing.trading.currentTradeOptions == 0 then
+    AuleSailing.say(("No routes found to deliver %s %s to %s.\n"):format(amount, what, where))
+    return
+  end
+
+  local currentCheapest = nil
+  local currentShortest = nil
+
+  for _, report in ipairs(AuleSailing.trading.currentTradeOptions) do
+    if not currentCheapest or currentCheapest.totalCost > report.totalCost then
+      currentCheapest = report
+    end
+
+    if not currentShortest or currentShortest.totalSteps > report.totalSteps then
+      currentShortest = report
+    end
+  end
+
+  AuleSailing.say(("Total routes available: <green>%s<reset>, Shortest route: %s, Lowest Cost: %s. To select a trade, send <green>T#<reset>\n\n")
+    :format(
+      #AuleSailing.trading.currentTradeOptions, currentShortest.totalSteps, currentCheapest.totalCost))
+
+  cecho("<DeepSkyBlue>Shortest<reset>: \n")
+  AuleSailing.trading.printRoute(currentShortest, 1)
+  AuleSailing.trading.selectableTrades[#AuleSailing.trading.selectableTrades + 1] = currentShortest
+
+  cecho("<DeepSkyBlue>Cheapest<reset>: \n")
+  AuleSailing.trading.printRoute(currentCheapest, 2)
+  AuleSailing.trading.selectableTrades[#AuleSailing.trading.selectableTrades + 1] = currentCheapest
 end
 
 function AuleSailing.trading.checkBreaker(msg)
@@ -37,11 +71,19 @@ function AuleSailing.trading.createStop(where, payWhat, payAmount, getWhat, getA
     where = where,
     payWhat = payWhat,
     payAmount = payAmount,
-    getWhat = getWhat,
+    getWhat = getWhat or payWhat,
     getAmount = getAmount or payAmount,
     next = nextDestination,
     totalToGet = payAmount
   }
+end
+
+function AuleSailing.trading.getPort(name)
+  for _, port in ipairs(AuleSailing.ports) do
+    if port.name == name then return port end
+  end
+
+  return nil
 end
 
 function AuleSailing.trading.getRouteSummary(start)
@@ -59,9 +101,16 @@ function AuleSailing.trading.getRouteSummary(start)
   -- First, go to the end, because we'll need to do maths from there
   local currentDest = start
   local allDestinations = { copyStop(start) }
+  local portFees = 0
+
+  local port = AuleSailing.trading.getPort(currentDest.where)
+
+  if port then portFees = portFees + port.fee end
 
   while currentDest.next do
     allDestinations[#allDestinations + 1] = copyStop(currentDest.next)
+    local currPort = AuleSailing.trading.getPort(currentDest.next.where)
+    if currPort then portFees = portFees + currPort.fee end
     currentDest = currentDest.next
   end
 
@@ -77,6 +126,7 @@ function AuleSailing.trading.getRouteSummary(start)
 
   local routeSummary = {
     destinations = allDestinations,
+    totalCost = portFees + (allDestinations[1].payAmount * allDestinations[1].totalToGet),
     totalSteps = #allDestinations
   }
 
@@ -129,5 +179,52 @@ function AuleSailing.trading.processNextStops(dest)
     for _, nextDest in ipairs(newStops) do
       AuleSailing.trading.processNextStops(nextDest)
     end
+  end
+end
+
+function AuleSailing.trading.printRoute(routeReport, index)
+  local reportString = ""
+
+  reportString = reportString ..
+      ("[%s] Route summary - Steps: %s Cost: %s\n"):format(index, routeReport.totalSteps, routeReport.totalCost)
+
+  local eachStep = {}
+
+  for _, step in ipairs(routeReport.destinations) do
+    eachStep[#eachStep + 1] = ("<GreenYellow>%s<reset>: <gold>%s <blaze_orange>%s<reset>"):format(step.where,
+      step.totalToGet, step.getWhat)
+  end
+
+  reportString = reportString .. table.concat(eachStep, " -> ") .. "\n\n"
+  cecho(reportString)
+end
+
+function AuleSailing.trading.selectTrade(index)
+  if #AuleSailing.trading.selectableTrades == 0 then
+    AuleSailing.say("No trades are currently selectable")
+    return
+  end
+
+  if not AuleSailing.trading.selectableTrades[index] then
+    AuleSailing.say("There's no trade in position " .. index)
+    return
+  end
+
+  AuleSailing.trading.selectedTrade = AuleSailing.trading.selectableTrades[index]
+
+  cecho("[" .. index .. "] <DeepSkyBlue>Selected Trade<reset>: \n")
+  AuleSailing.trading.printRoute(AuleSailing.trading.selectedTrade)
+end
+
+function AuleSailing.trading.showTrades()
+  if #AuleSailing.trading.currentTradeOptions == 0 then
+    AuleSailing.say(
+      "No trade routes have been processed yet. Do HARBOUR INFO at a harbor or send <green>route [harbour] [amount] [what]<reset>")
+    return
+  end
+
+  for i, report in ipairs(AuleSailing.trading.currentTradeOptions) do
+    AuleSailing.trading.selectableTrades[i] = report
+    AuleSailing.trading.printRoute(report, i)
   end
 end
