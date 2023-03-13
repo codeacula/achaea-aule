@@ -10,15 +10,6 @@ AuleSailing.toAdd = {}
 AuleSailing.toUpdate = {}
 AuleSailing.isCheckingHarbour = false
 
-AuleSailing.roles = {
-  No = "None",
-  Ca = "Captain",
-  Ba = "Ballista",
-  On = "Onager",
-  Wa = "Watch",
-  He = "Helm",
-}
-
 AuleSailing.points = {
   galley = { [0] = 0, 0, 2, 4, 6, 8, 10, 11, 12 },
   strider = { [0] = 0, 0, 3, 4, 6, 8, 9, 10, 10 },
@@ -37,10 +28,20 @@ AuleSailing.rowingEffectiveness = {
   { cryptic = "IX",   name = "IX",   effectiveness = 0 },
 }
 
-AuleSailing.ship = {
-  heading = nil
-}
+--[[
 
+Mirror Caves
+
+14694
+]]
+   --
+
+AuleSailing.ship = {
+  heading = nil,
+  hull = 100,
+  sails = 100,
+  speed = 0,
+}
 AuleSailing.startCapturingShips = false
 
 AuleSailing.dbStructure = {

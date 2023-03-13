@@ -15,21 +15,32 @@ function AuleSailing.trading.findTradeRoutes(where, what, amount)
   AuleSailing.trading.selectableTrades = {}
   AuleSailing.trading.circuitBreakerCount = 0
   local finalDest = AuleSailing.trading.createStop(where, what, amount)
+  local allRoutes = {}
 
   AuleSailing.trading.processNextStops(finalDest)
 
   for _, start in ipairs(AuleSailing.trading.startingPoints) do
-    AuleSailing.trading.currentTradeOptions[#AuleSailing.trading.currentTradeOptions + 1] = AuleSailing.trading
-        .getRouteSummary(start)
+    allRoutes[#allRoutes + 1] = AuleSailing.trading.getRouteSummary(start)
   end
 
-  if #AuleSailing.trading.currentTradeOptions == 0 then
+  if #allRoutes == 0 then
     AuleSailing.say(("No routes found to deliver %s %s to %s.\n"):format(amount, what, where))
     return
   end
 
   local currentCheapest = nil
   local currentShortest = nil
+  local ignoreRoutes = {}
+
+  for _, report in ipairs(allRoutes) do
+    if report.ignore then
+      ignoreRoutes[#ignoreRoutes + 1] = report
+    else
+      AuleSailing.trading.currentTradeOptions[#AuleSailing.trading.currentTradeOptions + 1] = report
+    end
+  end
+
+  if #AuleSailing.trading.currentTradeOptions == 0 then AuleSailing.trading.currentTradeOptions = ignoreRoutes end
 
   for _, report in ipairs(AuleSailing.trading.currentTradeOptions) do
     if not currentCheapest or currentCheapest.totalCost > report.totalCost then
@@ -102,10 +113,14 @@ function AuleSailing.trading.getRouteSummary(start)
   local currentDest = start
   local allDestinations = { copyStop(start) }
   local portFees = 0
+  local ignore = false
 
   local port = AuleSailing.trading.getPort(currentDest.where)
 
-  if port then portFees = portFees + port.fee end
+  if port then
+    if port.ignore then ignore = true end
+    portFees = portFees + port.fee
+  end
 
   while currentDest.next do
     allDestinations[#allDestinations + 1] = copyStop(currentDest.next)
@@ -127,7 +142,8 @@ function AuleSailing.trading.getRouteSummary(start)
   local routeSummary = {
     destinations = allDestinations,
     totalCost = portFees + (allDestinations[1].payAmount * allDestinations[1].totalToGet),
-    totalSteps = #allDestinations
+    totalSteps = #allDestinations,
+    ignore = ignore
   }
 
   return routeSummary
